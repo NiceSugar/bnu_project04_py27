@@ -597,6 +597,10 @@ def main():
 
 
 if __name__ == '__main__':
+    # tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
+    # for i in tem_dic:
+    #     for d in tem_dic[i].item():
+    #         print(d)
     main()
     # gen_dependent_pdsi1()
     # pdsi = np.load(this_root + 'PDSI\\PDSI_result_filter.npz')
