@@ -44,7 +44,7 @@ def pre_kernel(lines,stations,save_path):
     pass
 
 def composite_pre():
-    f_dir = this_root+'PDSI\\PRE18\\'
+    f_dir = this_root+'PDSI\\in_situ\\PRE18\\'
     dic_output = this_root+'PDSI\\PRE_transform\\'
     mk_dir(dic_output)
     f_list = os.listdir(f_dir)
@@ -63,10 +63,9 @@ def composite_pre():
         stations = []
         for line in lines:
             line = line.split('\n')[0]
-            # print(line)
             sta = line[0:5]
             stations.append(sta)
-
+        # exit()
         stations = set(stations)
 
         save_path = dic_output+date
@@ -105,7 +104,13 @@ def tem_kernel(lines,stations,save_path):
     pass
 
 def composite_tem():
-    f_dir = this_root+'PDSI\\TEM18\\'
+    '''
+    **********
+    修改最低温
+    **********
+    :return:
+    '''
+    f_dir = this_root+'PDSI\\in_situ\\TEM18\\'
     dic_output = this_root+'PDSI\\TEM_transform\\'
     mk_dir(dic_output)
     f_list = os.listdir(f_dir)
@@ -124,8 +129,11 @@ def composite_tem():
         stations = []
         for line in lines:
             line = line.split('\n')[0]
-            # print(line)
+            print(line)
             sta = line[0:5]
+            val = float(line[50:55])
+            print(val)
+            print('*'*8)
             stations.append(sta)
 
         stations = set(stations)
@@ -466,8 +474,8 @@ def gen_dependent_pdsi():
 def gen_dependent_pdsi1():
     # 去除无效值
     # key = 2003
-    pdsi = np.load(this_root + 'PDSI\\PDSI_result.npz')
-    pdsi_out = this_root + 'PDSI\\PDSI_result_filter'
+    pdsi = np.load(this_root + 'PDSI\\project02_pdsi\\self_cal_all_sta_dic.npz')
+    pdsi_out = this_root + 'PDSI\\project02_pdsi\\PDSI_result_filter'
     valid_year = []
     # oneyear_filtered_pdsi = {}
     for y in range(2000, 2018):
@@ -502,7 +510,7 @@ def gen_dependent_pdsi1():
 
 
 
-def main():
+def pre_tem_pdsi_corr():
 
     valid_year = []
     for y in range(2003,2017):
@@ -596,12 +604,111 @@ def main():
     # plt.show()
 
 
+def pre_tem_pdsi_corr_new():
+
+    # 使用 project02的pdsi
+
+    pdsi = np.load(this_root+'PDSI\\project02_pdsi\\PDSI_result_filter.npz')
+
+    valid_year = []
+    for y in range(2003,2016):
+        valid_year.append(y)
+    date_list = []
+    for y in valid_year:
+        for m in range(1, 13):
+            date_list.append(str(y) + '%02d' % m)
+
+
+    tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
+    print('processing temperature...')
+    sta_tem_dic = {}
+    for sta in tem_dic:
+        # print(sta)
+        # print(tem_dic[sta])
+        one_sta_tem_dic = tem_dic[sta].item()
+        one_sta = []
+        for key in date_list:
+            try:
+                one_sta.append(one_sta_tem_dic[key])
+            except:
+                pass
+        if len(one_sta) == 156:
+            sta_tem_dic[sta] = one_sta
+
+
+    pre_dic = np.load(this_root + 'PDSI\\pre_dic.npz')
+    print('processing precipitation...')
+    sta_pre_dic = {}
+    for sta in pre_dic:
+        # print(sta)
+        # print(tem_dic[sta])
+        one_sta_pre_dic = pre_dic[sta].item()
+        one_sta = []
+        for key in date_list:
+            try:
+                one_sta.append(one_sta_pre_dic[key])
+            except:
+                pass
+        if len(one_sta) == 156:
+            sta_pre_dic[sta] = one_sta
+
+    X = []
+    Y = []
+    Z = []
+    flag = 0
+    for sta in sta_pre_dic:
+        flag += 1
+        print(flag, '/', len(sta_pre_dic))
+        # print(sta)
+        try:
+            onesta = pdsi[sta].item()
+        except:
+            one_sta = []
+            continue
+        onesta_tem = sta_tem_dic[sta]
+        onesta_pre = sta_pre_dic[sta]
+        pdsi_line = []
+            # if not i in valid_year:
+            #     continue
+        for y in range(2003, 2016):
+            # print(i)
+            # print(type(i))
+            for m in onesta[y]:
+                # print(m)
+                pdsi_line.append(m)
+
+        # print(len(pdsi_line))
+        if len(pdsi_line) == 156:
+            for i in range(len(pdsi_line)):
+                X.append(onesta_tem[i])
+                Y.append(onesta_pre[i])
+                Z.append(pdsi_line[i])
+
+
+    print(np.shape(X))
+    print(np.shape(Y))
+    print(np.shape(Z))
+
+
+    kde_plot_scatter.plot_scatter(X[::50],Y[::50])
+    kde_plot_scatter.plot_scatter(Y[::50],Z[::50])
+    kde_plot_scatter.plot_scatter(X[::50],Z[::50])
+    # plt.figure()
+    # plt.plot(Y)
+    plt.figure()
+    plt.plot(Z)
+    plt.title('pdsi')
+
+    plt.show()
+
+
+
 if __name__ == '__main__':
     # tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
     # for i in tem_dic:
     #     for d in tem_dic[i].item():
     #         print(d)
-    main()
+    pre_tem_pdsi_corr_new()
     # gen_dependent_pdsi1()
     # pdsi = np.load(this_root + 'PDSI\\PDSI_result_filter.npz')
     # for arr in pdsi:
