@@ -1,12 +1,13 @@
 # coding=gbk
 
 import os
-this_root = os.getcwd()+'\\..\\'
+this_root = 'e:\\MODIS\\'
 import numpy as np
 import multiprocessing as mp
 from matplotlib import pyplot as plt
 import time
 import log_process
+import scipy
 
 def mk_dir(dir):
     if not os.path.isdir(dir):
@@ -460,20 +461,69 @@ def main():
     # mode = 'T'
     # preprare_PDSI(mode)
     # get_PDSI()
+    valid_year = []
+    for y in range(2003,2017):
+        valid_year.append(y)
+
+
+
+    tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
+    date_list = []
+    for y in valid_year:
+        for m in range(1,13):
+            date_list.append(str(y)+'%02d'%m)
+
+    sta_tem_dic = {}
+    for sta in tem_dic:
+        # print(sta)
+        # print(tem_dic[sta])
+        one_sta_tem_dic = tem_dic[sta].item()
+        one_sta = []
+        for key in date_list:
+            try:
+                one_sta.append(one_sta_tem_dic[key])
+            except:
+                pass
+        if len(one_sta) == 168:
+            sta_tem_dic[sta] = one_sta
+
+            # plt.plot(one_sta)
+            # plt.show()
+
+
+
+    # exit()
     pdsi = np.load(this_root+'PDSI\\PDSI_result.npz')
+    X = []
+    Y = []
     for sta in pdsi:
         print(sta)
         onesta = pdsi[sta].item()
+        onesta_tem = sta_tem_dic[sta]
+        tem_line = []
         pdsi_line = []
         for i in onesta:
-            print(i)
+            if not i in valid_year:
+                continue
+            # print(i)
             for m in onesta[i]:
                 pdsi_line.append(m)
             # pdsi_line.append(onesta[i])
         plt.plot(pdsi_line)
+        plt.title(sta)
+        plt.figure()
+        plt.plot(onesta_tem)
+        plt.figure()
+        plt.scatter(onesta_tem,pdsi_line)
+        try:
+            r = scipy.stats.pearsonr(onesta_tem,pdsi_line)
+            print(r)
+        except Exception as e:
+            print(e)
         plt.show()
         # exit()
 
 
 if __name__ == '__main__':
-    gen_dependent_pdsi()
+    main()
+    # gen_dependent_pdsi()
