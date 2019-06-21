@@ -7,7 +7,9 @@ import multiprocessing as mp
 from matplotlib import pyplot as plt
 import time
 import log_process
-import scipy
+import kde_plot_scatter
+# import scipy
+from scipy import stats
 
 def mk_dir(dir):
     if not os.path.isdir(dir):
@@ -423,7 +425,10 @@ def get_PDSI():
 
 
 def gen_dependent_pdsi():
+    # 去除无效值
+    # key = 50136_200411
     pdsi = np.load(this_root + 'PDSI\\PDSI_result.npz')
+    pdsi_out = this_root + 'PDSI\\PDSI_result_filter'
     valid_year = []
     for y in range(2000,2018):
         valid_year.append(y)
@@ -448,7 +453,7 @@ def gen_dependent_pdsi():
         log_process.process_bar(flag,len(pdsi),time_init,time_start,time_end,str(flag)+'/'+str(len(pdsi)))
         flag += 1
     print 'saving dic...'
-    np.save(r'D:\ly\MODIS\train_test_data\PDSI\pdsi_dic_new',independent_pdsi)
+    np.save(pdsi_out,independent_pdsi)
 
     # key = 50136_200411
     # npz = r'D:\ly\MODIS\train_test_data\03_VSWI\03_VSWI.npz'
@@ -457,22 +462,59 @@ def gen_dependent_pdsi():
     #     print(i)
     #     time.sleep(0.3)
 
+
+def gen_dependent_pdsi1():
+    # 去除无效值
+    # key = 2003
+    pdsi = np.load(this_root + 'PDSI\\PDSI_result.npz')
+    pdsi_out = this_root + 'PDSI\\PDSI_result_filter'
+    valid_year = []
+    # oneyear_filtered_pdsi = {}
+    for y in range(2000, 2018):
+        # oneyear_filtered_pdsi[y] = []
+        valid_year.append(y)
+
+    time_init = time.time()
+    flag = 0
+
+    filtered_pdsi = {}
+    for sta in pdsi:
+        oneyear_filtered_pdsi = {}
+        for y in range(2000, 2018):
+            oneyear_filtered_pdsi[y] = []
+            valid_year.append(y)
+        time_start = time.time()
+        onesta_pdsi_dic = pdsi[sta].item()
+
+        for year in onesta_pdsi_dic:
+            if year in valid_year:
+                vals = onesta_pdsi_dic[year]
+                for val in vals:
+                    if -10 < val < 10:
+                        oneyear_filtered_pdsi[year].append(val)
+        # print(oneyear_filtered_pdsi)
+        filtered_pdsi[sta] = oneyear_filtered_pdsi
+        time_end = time.time()
+        log_process.process_bar(flag, len(pdsi), time_init, time_start, time_end, str(flag) + '/' + str(len(pdsi)))
+        flag += 1
+    print('saving...')
+    np.savez(pdsi_out,**filtered_pdsi)
+
+
+
 def main():
-    # mode = 'T'
-    # preprare_PDSI(mode)
-    # get_PDSI()
+
     valid_year = []
     for y in range(2003,2017):
         valid_year.append(y)
-
+    date_list = []
+    for y in valid_year:
+        for m in range(1, 13):
+            date_list.append(str(y) + '%02d' % m)
 
 
     tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
-    date_list = []
-    for y in valid_year:
-        for m in range(1,13):
-            date_list.append(str(y)+'%02d'%m)
-
+    print('processing temperature...')
     sta_tem_dic = {}
     for sta in tem_dic:
         # print(sta)
@@ -487,20 +529,39 @@ def main():
         if len(one_sta) == 168:
             sta_tem_dic[sta] = one_sta
 
-            # plt.plot(one_sta)
-            # plt.show()
 
+    pre_dic = np.load(this_root + 'PDSI\\pre_dic.npz')
+    print('processing precipitation...')
+    sta_pre_dic = {}
+    for sta in pre_dic:
+        # print(sta)
+        # print(tem_dic[sta])
+        one_sta_pre_dic = pre_dic[sta].item()
+        one_sta = []
+        for key in date_list:
+            try:
+                one_sta.append(one_sta_pre_dic[key])
+            except:
+                pass
+        if len(one_sta) == 168:
+            sta_pre_dic[sta] = one_sta
 
-
-    # exit()
-    pdsi = np.load(this_root+'PDSI\\PDSI_result.npz')
+    pdsi = np.load(this_root+'PDSI\\PDSI_result_filter.npz')
     X = []
     Y = []
-    for sta in pdsi:
-        print(sta)
-        onesta = pdsi[sta].item()
+    Z = []
+    flag = 0
+    for sta in sta_pre_dic:
+        flag += 1
+        print(flag,'/',len(pdsi))
+        # print(sta)
+        try:
+            onesta = pdsi[sta].item()
+        except:
+            one_sta = []
+            continue
         onesta_tem = sta_tem_dic[sta]
-        tem_line = []
+        onesta_pre = sta_pre_dic[sta]
         pdsi_line = []
         for i in onesta:
             if not i in valid_year:
@@ -509,21 +570,35 @@ def main():
             for m in onesta[i]:
                 pdsi_line.append(m)
             # pdsi_line.append(onesta[i])
-        plt.plot(pdsi_line)
-        plt.title(sta)
-        plt.figure()
-        plt.plot(onesta_tem)
-        plt.figure()
-        plt.scatter(onesta_tem,pdsi_line)
-        try:
-            r = scipy.stats.pearsonr(onesta_tem,pdsi_line)
-            print(r)
-        except Exception as e:
-            print(e)
-        plt.show()
-        # exit()
+        if len(pdsi_line) == 168:
+            for i in range(len(pdsi_line)):
+                X.append(onesta_tem[i])
+                Y.append(onesta_pre[i])
+                Z.append(pdsi_line[i])
+
+    # np.save(this_root+'PDSI\\')
+    # r = stats.pearsonr(X,Y)
+    # print(r)
+    print('saving')
+    print(len(X))
+    print(len(Y))
+    print(len(Z))
+    np.save(this_root+'PDSI\\x_temp',X)
+    np.save(this_root+'PDSI\\y_pre',Y)
+    np.save(this_root+'PDSI\\z_pdsi',Z)
+    # kde_plot_scatter.plot_scatter(X[::50],Y[::50])
+    # plt.figure()
+    # plt.plot(Y)
+    # plt.figure()
+    # plt.plot(Z)
+    # plt.figure()
+    # plt.scatter(Y,Z)
+    # plt.show()
 
 
 if __name__ == '__main__':
     main()
-    # gen_dependent_pdsi()
+    # gen_dependent_pdsi1()
+    # pdsi = np.load(this_root + 'PDSI\\PDSI_result_filter.npz')
+    # for arr in pdsi:
+    #     print(pdsi[arr].item())
