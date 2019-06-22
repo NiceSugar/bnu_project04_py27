@@ -60,7 +60,7 @@ def makeColours(vals,cmap,reverse=0):
 
 
 
-def plot_scatter(val1,val2,cmap='Spectral',reverse=1,s=1.,title = ''):
+def plot_scatter(val1,val2,cmap='RdYlBu',reverse=1,s=1.,title = ''):
 
     kde_val = np.array([val1,val2])
     print('doing kernel density estimation... ')

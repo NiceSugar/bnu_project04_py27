@@ -1,4 +1,4 @@
-# coding=gbk
+# coding=utf-8
 
 import os
 this_root = 'e:\\MODIS\\'
@@ -106,7 +106,7 @@ def tem_kernel(lines,stations,save_path):
 def composite_tem():
     '''
     **********
-    ÐÞ¸Ä×îµÍÎÂ
+    ä¿®æ”¹æœ€ä½Žæ¸©
     **********
     :return:
     '''
@@ -214,7 +214,7 @@ def composite_month(fdir,dic_save_path):
 def preprare_PDSI(mode):
 
     '''
-    Éú³É monthly_P ºÍ monthly_T
+    ç”Ÿæˆ monthly_P å’Œ monthly_T
     :param mode:
     :return:
     '''
@@ -294,7 +294,7 @@ def preprare_PDSI(mode):
 
 def gen_parameter():
     '''
-    Éú³Ésc-PDSI²ÎÊý£¬AWC ºÍ Õ¾µãÎ³¶È
+    ç”Ÿæˆsc-PDSIå‚æ•°ï¼ŒAWC å’Œ ç«™ç‚¹çº¬åº¦
     Returns:
 
     '''
@@ -321,7 +321,7 @@ def gen_parameter():
 def gen_normal_T():
 
     '''
-    Éú³É monthly_P ºÍ monthly_T
+    ç”Ÿæˆ monthly_P å’Œ monthly_T
     :param mode:
     :return:
     '''
@@ -372,7 +372,7 @@ def gen_normal_T():
 
 def cal_PDSI():
     '''
-        Í¨¹ýSC-PDSI.exe ¼ÆËãPDSI
+        é€šè¿‡SC-PDSI.exe è®¡ç®—PDSI
         Returns:
 
         '''
@@ -433,7 +433,7 @@ def get_PDSI():
 
 
 def gen_dependent_pdsi():
-    # È¥³ýÎÞÐ§Öµ
+    # åŽ»é™¤æ— æ•ˆå€¼
     # key = 50136_200411
     pdsi = np.load(this_root + 'PDSI\\PDSI_result.npz')
     pdsi_out = this_root + 'PDSI\\PDSI_result_filter'
@@ -472,7 +472,7 @@ def gen_dependent_pdsi():
 
 
 def gen_dependent_pdsi1():
-    # È¥³ýÎÞÐ§Öµ
+    # åŽ»é™¤æ— æ•ˆå€¼
     # key = 2003
     pdsi = np.load(this_root + 'PDSI\\project02_pdsi\\self_cal_all_sta_dic.npz')
     pdsi_out = this_root + 'PDSI\\project02_pdsi\\PDSI_result_filter'
@@ -606,7 +606,7 @@ def pre_tem_pdsi_corr():
 
 def pre_tem_pdsi_corr_new():
 
-    # Ê¹ÓÃ project02µÄpdsi
+    # ä½¿ç”¨ project02çš„pdsi
 
     pdsi = np.load(this_root+'PDSI\\project02_pdsi\\PDSI_result_filter.npz')
 
@@ -836,7 +836,7 @@ def gen_precip_anomaly():
 
 
 def correlation_temp_pre_pdsi():
-    # Ê¹ÓÃ project02µÄpdsi
+    # ä½¿ç”¨ project02çš„pdsi
 
     pdsi = np.load(this_root + 'PDSI\\project02_pdsi\\PDSI_result_filter.npz')
     pdsi_dic = {}
@@ -893,8 +893,8 @@ def correlation_temp_pre_pdsi():
 
 
 def gen_new_dic():
-    # ½«pre tem pdsi ×ª»¯Îª×Öµä
-    # ¼ü xxxxx_200301
+    # å°†pre tem pdsi è½¬åŒ–ä¸ºå­—å…¸
+    # é”® xxxxx_200301
     pdsi = np.load(this_root + 'PDSI\\project02_pdsi\\PDSI_result_filter.npz')
     pdsi_dic = {}
     for arr in pdsi:
@@ -906,7 +906,7 @@ def gen_new_dic():
     t_anomaly = dict(t_anomaly)
     p_anomaly = dict(p_anomaly)
 
-    # ×ª»¯pdsi
+    # è½¬åŒ–pdsi
     print('transforming pdsi')
     pdsi_dic_trans = {}
     for sta in pdsi_dic:
@@ -922,7 +922,7 @@ def gen_new_dic():
                     pdsi_dic_trans[key] = val
     # print('len(pdsi_dic_trans):%s'%len(pdsi_dic_trans))
 
-    # ×ª»¯ pre
+    # è½¬åŒ– pre
     print('transforming pre')
     pre_dic_trans = {}
     for sta in t_anomaly:
@@ -937,7 +937,7 @@ def gen_new_dic():
             # print(2003+year,month)
             # print((m)%12,val)
 
-    # ×ª»¯ temp
+    # è½¬åŒ– temp
     print('transforming temp')
     tem_dic_trans = {}
     for sta in p_anomaly:
@@ -1000,11 +1000,126 @@ def correlation_temp_pre_pdsi_anomaly():
 
 
 
+def read_china_ci_from_files():
 
+    fdir = this_root+'China_CI\\CI2\\'
+    flist = os.listdir(fdir)
+    date_list = []
+    for y in range(10,16):
+        for m in range(1,13):
+            date_list.append(str(y)+'%02d'%m)
+
+    #å»ºç«‹ç«™ç‚¹å­—å…¸
+
+    fr = open(this_root+'China_CI\\CI\\100104.txt','r')
+    lines = fr.readlines()
+    sta_dic = {}
+    for line in lines:
+        line = line.split('\n')[0]
+        line = line.split()
+        sta_dic[line[0]] = {}
+    # for sta in sta_dic:
+    #     #     print(sta)
+    #     # exit()
+
+
+    for date in date_list:
+        print(date)
+        flag = 0
+        for f in flist:
+            if f[:4] == date:
+                # print(f)
+                fr = open(fdir+f,'r')
+                lines = fr.readlines()
+                for line in lines:
+                    line = line.split('\n')[0]
+                    line = line.split()
+                    try:
+                        sta = line[0]
+                    except Exception as e:
+                        print(f)
+                        print(e)
+                        continue
+                    # print(sta)
+                    if sta in sta_dic:
+                        val = float(line[1])
+                        sta_dic[sta]['20'+f[:-4]] = val
+    print('saving china ci...')
+    np.savez(this_root+'PDSI\\china_ci2',**sta_dic)
+        # print('len(sta_dic)%s'%len(sta_dic))
+        # for i in sta_dic:
+        #     print(i)
+        #     print(sta_dic[i])
+        #     exit()
+
+
+def china_ci():
+    npz = np.load(this_root+'PDSI\\china_ci2.npz')
+    china_ci_dic = {}
+    for i,sta in enumerate(npz):
+        print(i+1,'/',len(npz))
+        # print(len(npz[npy].item()))
+        sta_dic = npz[sta].item()
+        for y in range(2010,2016):
+            for m in range(1,13):
+                date_gen = str(y)+'%02d'%m
+                val_sum = 0.
+                flag = 0.
+                for date in sta_dic:
+                    if date[:6] == date_gen:
+                        val = sta_dic[date]
+                        if val > -99:
+                            val_sum += val
+                            flag += 1.
+                if flag >0:
+                    mean = val_sum/flag
+                else:
+                    mean = -9999
+                # print(sta,date_gen,mean)
+                key = sta+'_'+date_gen
+                china_ci_dic[key] = mean
+    print('saving dic...')
+    np.save(this_root+'PDSI\\china_ci_dic2',china_ci_dic)
+        # exit()
 def main():
-    # gen_temp_anomaly()
+    # read_china_ci_from_files()
+    # china_ci()
+    ci1 = np.load(this_root+'PDSI\\china_ci_dic1.npy').item()
+    ci2 = np.load(this_root+'PDSI\\china_ci_dic2.npy').item()
+    pdsi = np.load(this_root+'PDSI\\pdsi_trans.npy').item()
+
+    all_ci = {}
+    for key in ci1:
+        vals = max([ci1[key],ci2[key]])
+        all_ci[key] = vals
+
+
+    x = []
+    y = []
+    for key in all_ci:
+        if key in pdsi:
+            pdsi_i = pdsi[key]
+            ci_i = all_ci[key]
+            if -5 < ci_i < 5:
+                x.append(ci_i)
+                y.append(pdsi_i)
+    print(len(x))
+    print(len(y))
+    kde_plot_scatter.plot_scatter(x[::3],y[::3])
+    plt.figure()
+    plt.scatter(x,y,s=0.5)
+    r = stats.pearsonr(x,y)
+    print(r)
+    plt.show()
+
+    #     break
+    # for key in ci2:
+    #     print(key)
+    #     print(ci2[key])
+    #     exit()
+    # # gen_temp_anomaly()
     # gen_precip_anomaly()
-    correlation_temp_pre_pdsi_anomaly()
+    # china_ci()
 
 
 
