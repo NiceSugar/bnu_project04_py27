@@ -60,7 +60,7 @@ def makeColours(vals,cmap,reverse=0):
 
 
 
-def plot_scatter(val1,val2,cmap='Spectral',reverse=1,s=1.):
+def plot_scatter(val1,val2,cmap='Spectral',reverse=1,s=1.,title = ''):
 
     kde_val = np.array([val1,val2])
     print('doing kernel density estimation... ')
@@ -78,9 +78,10 @@ def plot_scatter(val1,val2,cmap='Spectral',reverse=1,s=1.):
     # ax.set_facecolor('black')
     plt.figure()
     if reverse:
-        plt.title(cmap+'_reverse')
+        # plt.title(cmap+'_reverse')
+        plt.title(title)
     else:
-        plt.title(cmap)
+        plt.title(title)
 
     plt.scatter(val1,val2,c=colors,s=s)
     # plt.xlim((0.17, 0.30))

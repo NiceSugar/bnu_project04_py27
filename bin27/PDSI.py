@@ -892,10 +892,119 @@ def correlation_temp_pre_pdsi():
 
 
 
+def gen_new_dic():
+    # 将pre tem pdsi 转化为字典
+    # 键 xxxxx_200301
+    pdsi = np.load(this_root + 'PDSI\\project02_pdsi\\PDSI_result_filter.npz')
+    pdsi_dic = {}
+    for arr in pdsi:
+        pdsi_dic[arr] = pdsi[arr].item()
+
+    t_anomaly = np.load(this_root + 'PDSI\\temp_anomaly_2003-2015.npy').item()
+    p_anomaly = np.load(this_root + 'PDSI\\pre_anomaly_2003-2015.npy').item()
+
+    t_anomaly = dict(t_anomaly)
+    p_anomaly = dict(p_anomaly)
+
+    # 转化pdsi
+    print('transforming pdsi')
+    pdsi_dic_trans = {}
+    for sta in pdsi_dic:
+        # print(sta)
+        # print(pdsi[sta])
+        one_sta = pdsi_dic[sta]
+        for year in range(2003,2016):
+            oneyear_val = one_sta[year]
+            if len(oneyear_val) == 12:
+                for m,val in enumerate(oneyear_val):
+                    key = sta+'_'+str(year)+'%02d'%(m+1)
+                    # print(key,val)
+                    pdsi_dic_trans[key] = val
+    # print('len(pdsi_dic_trans):%s'%len(pdsi_dic_trans))
+
+    # 转化 pre
+    print('transforming pre')
+    pre_dic_trans = {}
+    for sta in t_anomaly:
+        onesta = t_anomaly[sta]
+        baseyear = 2003
+        for m,val in enumerate(onesta):
+            month = (m)%12+1
+            year = int(m/12)
+            key = sta+'_'+str(baseyear+year)+'%02d'%month
+            # print(key,val)
+            pre_dic_trans[key] = val
+            # print(2003+year,month)
+            # print((m)%12,val)
+
+    # 转化 temp
+    print('transforming temp')
+    tem_dic_trans = {}
+    for sta in p_anomaly:
+        onesta = p_anomaly[sta]
+        baseyear = 2003
+        for m,val in enumerate(onesta):
+            month = m%12+1
+            year = int(m/12)
+            key = sta+'_'+str(baseyear+year)+'%02d'%month
+            # print(key,val)
+            tem_dic_trans[key] = val
+
+    print('saving arr')
+    np.save(this_root+'PDSI\\pdsi_trans',pdsi_dic_trans)
+    np.save(this_root+'PDSI\\t_anomaly_trans',tem_dic_trans)
+    np.save(this_root+'PDSI\\p_anomaly_trans',pre_dic_trans)
+
+
+def correlation_temp_pre_pdsi_anomaly():
+
+    pdsi = np.load(this_root+'PDSI\\pdsi_trans.npy').item()
+    t = np.load(this_root+'PDSI\\t_anomaly_trans.npy').item()
+    p = np.load(this_root+'PDSI\\p_anomaly_trans.npy').item()
+
+    pdsi = dict(pdsi)
+    t = dict(t)
+    p = dict(p)
+
+    x = []
+    y = []
+    z = []
+    for key in pdsi:
+        if key in p and key in t:
+            x.append(t[key])
+            y.append(p[key])
+            z.append(pdsi[key])
+
+    print(len(x))
+    print(len(y))
+    print(len(z))
+    x = x[::156*2]
+    y = y[::156*2]
+    z = z[::156*2]
+
+    plt.figure()
+    plt.scatter(x,z)
+    plt.title('t,pdsi')
+
+    plt.figure()
+    plt.scatter(y,z)
+    plt.title('p,pdsi')
+
+    plt.figure()
+    plt.scatter(x,y)
+    plt.title('t,p')
+    # kde_plot_scatter.plot_scatter(x[:5000],z[:5000],title='temp_pdsi')
+    # kde_plot_scatter.plot_scatter(y[:5000],z[:5000],title='pre_pdsi')
+    # kde_plot_scatter.plot_scatter(x[:5000],y[:5000],title='temp_pre')
+    plt.show()
+
+
+
+
 def main():
     # gen_temp_anomaly()
     # gen_precip_anomaly()
-    correlation_temp_pre_pdsi()
+    correlation_temp_pre_pdsi_anomaly()
 
 
 
