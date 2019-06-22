@@ -693,8 +693,7 @@ def pre_tem_pdsi_corr_new():
     kde_plot_scatter.plot_scatter(X[::50],Y[::50])
     kde_plot_scatter.plot_scatter(Y[::50],Z[::50])
     kde_plot_scatter.plot_scatter(X[::50],Z[::50])
-    # plt.figure()
-    # plt.plot(Y)
+
     plt.figure()
     plt.plot(Z)
     plt.title('pdsi')
@@ -703,12 +702,210 @@ def pre_tem_pdsi_corr_new():
 
 
 
+def gen_temp_anomaly():
+    valid_year = []
+    for y in range(2003, 2016):
+        valid_year.append(y)
+    date_list = []
+    for y in valid_year:
+        for m in range(1, 13):
+            date_list.append(str(y) + '%02d' % m)
+
+
+    tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
+    print('processing temperature...')
+    sta_tem_dic = {}
+
+    time_init = time.time()
+    flag = 0
+    for sta in tem_dic:
+        time_start = time.time()
+        # print(sta)
+        # print(tem_dic[sta])
+        one_sta_tem_dic = tem_dic[sta].item()
+        one_sta = []
+        for key in date_list:
+            try:
+                one_sta.append(one_sta_tem_dic[key])
+            except:
+                pass
+        one_sta = np.array(one_sta)
+        try:
+            one_sta = one_sta.reshape(13,12)
+        except:
+            continue
+
+        one_month_average = []
+        one_month_std = []
+
+        for i in one_sta.T:
+            mean_val = np.mean(i)
+            std_val = np.std(i)
+            one_month_average.append(mean_val)
+            one_month_std.append(std_val)
+
+        anomaly_val = []
+        for i in one_sta:
+            val = (i-one_month_average)/one_month_std
+            anomaly_val.append(val)
+        anomaly_val = np.array(anomaly_val)
+
+        # plt.figure()
+        # plt.plot(anomaly_val.flatten())
+        #
+        # plt.figure()
+        # plt.plot(one_sta.flatten())
+        # plt.show()
+
+        anomaly_val_result = anomaly_val.flatten()
+
+        # if len(one_sta) == 156:
+        sta_tem_dic[sta] = anomaly_val_result
+        time_end = time.time()
+        log_process.process_bar(flag,len(tem_dic),time_init,time_start,time_end,sta)
+        flag+=1
+    print('\nsaving...')
+    np.save(this_root+'PDSI\\temp_anomaly_2003-2015',sta_tem_dic)
+
+
+def gen_precip_anomaly():
+    valid_year = []
+    for y in range(2003, 2016):
+        valid_year.append(y)
+    date_list = []
+    for y in valid_year:
+        for m in range(1, 13):
+            date_list.append(str(y) + '%02d' % m)
+
+    tem_dic = np.load(this_root + 'PDSI\\pre_dic.npz')
+    print('processing temperature...')
+    sta_tem_dic = {}
+
+    time_init = time.time()
+    flag = 0
+    for sta in tem_dic:
+        if sta == '56247':
+            continue
+        time_start = time.time()
+        # print(sta)
+        # print(tem_dic[sta])
+        one_sta_tem_dic = tem_dic[sta].item()
+        one_sta = []
+        for key in date_list:
+            try:
+                one_sta.append(one_sta_tem_dic[key])
+            except:
+                pass
+        one_sta = np.array(one_sta)
+        try:
+            one_sta = one_sta.reshape(13, 12)
+        except:
+            continue
+
+        one_month_average = []
+        one_month_std = []
+
+        for i in one_sta.T:
+            mean_val = np.mean(i)
+            std_val = np.std(i)
+            one_month_average.append(mean_val)
+            one_month_std.append(std_val)
+
+        anomaly_val = []
+        for i in one_sta:
+            val = (i - one_month_average) / one_month_std
+            anomaly_val.append(val)
+        anomaly_val = np.array(anomaly_val)
+
+        # plt.figure()
+        # plt.plot(anomaly_val.flatten())
+        #
+        # plt.figure()
+        # plt.plot(one_sta.flatten())
+        # plt.show()
+
+        anomaly_val_result = anomaly_val.flatten()
+
+        # if len(one_sta) == 156:
+        sta_tem_dic[sta] = anomaly_val_result
+        time_end = time.time()
+        log_process.process_bar(flag, len(tem_dic), time_init, time_start, time_end, sta)
+        flag += 1
+    print('\nsaving...')
+    np.save(this_root + 'PDSI\\pre_anomaly_2003-2015', sta_tem_dic)
+
+
+def correlation_temp_pre_pdsi():
+    # Ê¹ÓÃ project02µÄpdsi
+
+    pdsi = np.load(this_root + 'PDSI\\project02_pdsi\\PDSI_result_filter.npz')
+    pdsi_dic = {}
+    for arr in pdsi:
+        pdsi_dic[arr] = pdsi[arr].item()
+
+    t_anomaly = np.load(this_root + 'PDSI\\temp_anomaly_2003-2015.npy').item()
+    p_anomaly = np.load(this_root + 'PDSI\\pre_anomaly_2003-2015.npy').item()
+
+    t_anomaly = dict(t_anomaly)
+    p_anomaly = dict(p_anomaly)
+
+    x = []
+    y = []
+    z = []
+    for sta in pdsi_dic:
+        if sta in t_anomaly and sta in p_anomaly:
+            continue_flag = 0
+            allyear_pdsi = pdsi_dic[sta]
+
+            for year in range(2003, 2016):
+                print(year)
+                oneyear = allyear_pdsi[year]
+                if len(oneyear) == 12:
+                    # print(oneyear)
+                    # exit()
+                    for m in oneyear:
+                        z.append(m)
+                else:
+                    continue_flag = 1
+
+            if continue_flag == 0:
+                oneyear_p = p_anomaly[sta]
+                oneyear_t = t_anomaly[sta]
+                if not len(oneyear_p) == 156:
+                    print(oneyear_p)
+                    exit()
+                for i in oneyear_p:
+                    x.append(i)
+                for j in oneyear_t:
+                    y.append(j)
+            else:
+                continue
+            # print(sta)
+        # except Exception as e:
+        #     print('error',e)
+
+    print(len(x))
+    print(len(y))
+    print(len(z))
+    # kde_plot_scatter.plot_scatter(x[::30],y[::30])
+    # plt.show()
+
+
+
+def main():
+    # gen_temp_anomaly()
+    # gen_precip_anomaly()
+    correlation_temp_pre_pdsi()
+
+
+
+
 if __name__ == '__main__':
     # tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
     # for i in tem_dic:
     #     for d in tem_dic[i].item():
     #         print(d)
-    pre_tem_pdsi_corr_new()
+    main()
     # gen_dependent_pdsi1()
     # pdsi = np.load(this_root + 'PDSI\\PDSI_result_filter.npz')
     # for arr in pdsi:
