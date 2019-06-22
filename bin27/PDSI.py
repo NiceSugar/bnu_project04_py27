@@ -1081,7 +1081,9 @@ def china_ci():
     print('saving dic...')
     np.save(this_root+'PDSI\\china_ci_dic2',china_ci_dic)
         # exit()
-def main():
+
+
+def ci_pdsi():
     # read_china_ci_from_files()
     # china_ci()
     ci1 = np.load(this_root+'PDSI\\china_ci_dic1.npy').item()
@@ -1122,6 +1124,55 @@ def main():
     # china_ci()
 
 
+def ci_pre_temp_corr():
+    ci1 = np.load(this_root + 'PDSI\\china_ci_dic1.npy').item()
+    ci2 = np.load(this_root + 'PDSI\\china_ci_dic2.npy').item()
+    pre = np.load(this_root+'PDSI\\p_anomaly_trans.npy').item()
+    temp = np.load(this_root+'PDSI\\t_anomaly_trans.npy').item()
+    all_ci = {}
+    for key in ci1:
+        vals = max([ci1[key], ci2[key]])
+        all_ci[key] = vals
+
+    x = []
+    y = []
+    z = []
+    sta_list = ['57872','57657','57776',
+                '57713','58813','57774',
+                '57671', '58334', '57789',
+                '52754', '57732', '57649',
+                '57761', '57762', '58665',
+                '57754', '54437', '57669',
+                '58818', '57720', '58821',
+                ]
+
+    for key in all_ci:
+        if not key[:5] in sta_list:
+            continue
+        # exit()
+        if key in pre and key in temp:
+            pre_i = pre[key]
+            temp_i = temp[key]
+            ci_i = all_ci[key]
+            if -5 < ci_i < 5:
+                x.append(temp_i)
+                y.append(pre_i)
+                z.append(ci_i)
+
+    print(len(x))
+    print(len(y))
+    print(len(y))
+    kde_plot_scatter.plot_scatter(x, z,title='temp,ci',s=18)
+    kde_plot_scatter.plot_scatter(y, z,title='pre,ci',s=18)
+    # plt.figure()
+    # plt.scatter(x, y, s=0.5)
+    rxz = stats.pearsonr(x,z)
+    ryz = stats.pearsonr(y,z)
+    print('r_xz:%s'%rxz[0])
+    print('r_yz:%s'%ryz[0])
+    plt.show()
+
+
 
 
 if __name__ == '__main__':
@@ -1129,7 +1180,7 @@ if __name__ == '__main__':
     # for i in tem_dic:
     #     for d in tem_dic[i].item():
     #         print(d)
-    main()
+    ci_pre_temp_corr()
     # gen_dependent_pdsi1()
     # pdsi = np.load(this_root + 'PDSI\\PDSI_result_filter.npz')
     # for arr in pdsi:
