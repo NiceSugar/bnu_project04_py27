@@ -1174,13 +1174,114 @@ def ci_pre_temp_corr():
 
 
 
+def ci_pdsi_line_corr():
+    ci1 = np.load(this_root + 'PDSI\\china_ci_dic1.npy').item()
+    ci2 = np.load(this_root + 'PDSI\\china_ci_dic2.npy').item()
+
+    ci1 = dict(ci1)
+    ci2 = dict(ci2)
+
+    pdsi = np.load(this_root + 'PDSI\\pdsi_trans.npy').item()
+    pdsi = dict(pdsi)
+
+    pre = np.load(this_root + 'PDSI\\p_anomaly_trans.npy').item()
+    temp = np.load(this_root + 'PDSI\\t_anomaly_trans.npy').item()
+    pre = dict(pre)
+    temp = dict(temp)
+
+
+
+    all_ci = {}
+    for key in ci1:
+        vals = max([ci1[key], ci2[key]])
+        all_ci[key] = vals
+
+    date_list = []
+    for i in all_ci:
+        date = i.split('_')[1]
+        date_list.append(date)
+    date_list = set(date_list)
+    print(len(date_list))
+    date_list = list(date_list)
+    date_list.sort()
+
+
+
+    x = []
+    y = []
+    a = []
+    b = []
+    for date in date_list:
+        print(date)
+        pdsi_sum = 0.
+        flag1 = 0.
+        for key in pdsi:
+            date_i = key.split('_')[1]
+            if date == date_i:
+                val = pdsi[key]
+                if -6 < val < 6:
+                    pdsi_sum += val
+                    flag1 += 1.
+        pdsi_mean = pdsi_sum/flag1
+        x.append(pdsi_mean)
+
+        ci_sum = 0.
+        flag2 = 0.
+        for key in all_ci:
+            date_i = key.split('_')[1]
+            if date == date_i:
+                val = all_ci[key]
+                if -5 < val < 5 :
+                    ci_sum += val
+                    flag2 += 1.
+        ci_mean = ci_sum/flag2
+        y.append(ci_mean)
+
+        pre_sum = 0.
+        flag3 = 0.
+        for key in pre:
+            date_i = key.split('_')[1]
+            if date == date_i:
+                val = pre[key]
+                pre_sum += val
+                flag3 += 1.
+        pre_mean = pre_sum/flag3
+        a.append(pre_mean)
+
+        temp_sum = 0.
+        flag4 = 0.
+        for key in temp:
+            date_i = key.split('_')[1]
+            if date == date_i:
+                val = temp[key]
+                temp_sum += val
+                flag4 += 1.
+        temp_mean = temp_sum/flag4
+        b.append(temp_mean)
+
+
+    print(len(x))
+    print(len(y))
+    print(len(a))
+    print(len(b))
+
+    plt.plot(x,label='pdsi')
+    plt.plot(y,label='ci')
+    # plt.plot(a,label='pre')
+    plt.plot(b,label='temp')
+    plt.legend()
+    r = stats.pearsonr(x,y)
+    print(r)
+    plt.show()
+
+
 
 if __name__ == '__main__':
     # tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
     # for i in tem_dic:
     #     for d in tem_dic[i].item():
     #         print(d)
-    ci_pre_temp_corr()
+    ci_pdsi_line_corr()
     # gen_dependent_pdsi1()
     # pdsi = np.load(this_root + 'PDSI\\PDSI_result_filter.npz')
     # for arr in pdsi:
