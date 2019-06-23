@@ -52,10 +52,13 @@ def process_bar(i,length,time_init=None,start_time=None,end_time=None,custom_pri
     i = i + 1
     if time_init:
         time_delta = end_time - start_time
-        eta = time_delta * length - time_delta*(i)
+        # old version
+        # eta = time_delta * length - time_delta*(i)
         time_elapse = end_time - time_init
-
         done = int(50 * (i) / length)
+        # print('\n')
+        eta = (1/(float(i) / length)-1)*time_elapse
+
         sys.stdout.write(
             '\r%s '%changeTime(time_elapse)+ #逝去时间
             "[%s%s]" % ('=' * done + '>'+'%0.2f' % (100 * float(i) / length) + '%', '<'+'-' * (50 - done)) + #进度条+百分比
@@ -96,7 +99,7 @@ def main():
         start = time.time()
         time.sleep(0.01)
         end = time.time()
-        P(i, 1000,time_init,start,end,i)
+        P(i, 1000,time_init,start,end)
         # start = time.time()
 
 
