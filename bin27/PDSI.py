@@ -10,6 +10,7 @@ import log_process
 import kde_plot_scatter
 # import scipy
 from scipy import stats
+import datetime
 
 def mk_dir(dir):
     if not os.path.isdir(dir):
@@ -1275,13 +1276,131 @@ def ci_pdsi_line_corr():
     plt.show()
 
 
+def gen_3_months_average():
+    pre = np.load(this_root + 'PDSI\\p_anomaly_trans.npy').item()
+    temp = np.load(this_root + 'PDSI\\t_anomaly_trans.npy').item()
+    pre = dict(pre)
+    temp = dict(temp)
+
+    date_list = []
+    for year in range(2000,2016):
+        for mon in range(1,13):
+            date_list.append(str(year)+'%02d'%mon)
+
+    new_dic = {}
+    time_init = time.time()
+    flag = 0
+    for key in pre:
+        time_start = time.time()
+        key_split = key.split('_')
+        sta = key_split[0]
+        date_str = key_split[1]
+        year = int(date_str[:4])
+        mon = int(date_str[-2:])
+
+        date = datetime.datetime(year,mon,15)
+        time_delta = datetime.timedelta(30)
+
+        date_1 = date-time_delta
+        date_1_str = '%s%02d'%(date_1.year,date_1.month)
+
+        date_2 = date - time_delta*2
+        date_2_str = '%s%02d' % (date_2.year, date_2.month)
+
+        # print(date_1_str)
+        # print(date_2_str)
+        try:
+            val1 = pre[sta+'_'+date_str]
+            val2 = pre[sta+'_'+date_1_str]
+            val3 = pre[sta+'_'+date_2_str]
+            val_mean = np.mean([val1,val2,val3])
+            # print(val_mean)
+
+            new_dic[key] = val_mean
+        except Exception as e:
+            # print(e)
+            pass
+        time_end = time.time()
+        log_process.process_bar(flag,len(pre),time_init,time_start,time_end)
+        flag+=1
+    print('saving dic...')
+    np.save(this_root+'PDSI\\pre_3_months_average',new_dic)
+
+
+def plot_line_3_months_average():
+    t = np.load(this_root + 'PDSI\\temp_3_months_average.npy', encoding='latin1').item()
+    p = np.load(this_root + 'PDSI\\pre_3_months_average.npy', encoding='latin1').item()
+    ci = np.load(this_root + 'PDSI\\all_ci.npy').item()
+
+    ci = dict(ci)
+    t = dict(t)
+    p = dict(p)
+
+    npz = np.load(this_root + '\\in_situ_data\\pre_dic.npz')
+
+    selected_sta = []
+    for sta in npz:
+        sta_int = int(sta)
+        if sta_int < 51000:
+            selected_sta.append(sta)
+    print(selected_sta)
+    print(len(selected_sta))
+
+    X = []
+    Y = []
+    for key in ci:
+        sta = key.split('_')[0]
+        if not sta in selected_sta:
+            continue
+        # print(key)
+        if key in p and key in t:
+            X.append(p[key])
+            Y.append(ci[key])
+
+    import random
+    print(X)
+    random.shuffle(X)
+    print(X)
+    r = stats.pearsonr(X,Y)
+    print('stats.pearsonr(X,Y)%s'%r[0])
+    kde_plot_scatter.plot_scatter(X,Y)
+    plt.show()
+
+
+
+
+
+    for sta in t:
+        print(sta,t[sta])
+
+
+def main():
+    # import random
+    # # plot_line_3_months_average()
+    # a=np.linspace(-1,1,10000)
+    # b=a+1
+    # a = list(a)
+    # b = list(b)
+    # print(a)
+    # print(b)
+    # random.shuffle(a)
+    # print(a)
+    # print(b)
+    # kde_plot_scatter.plot_scatter(a,b)
+    # plt.show()
+    plot_line_3_months_average()
+
+    pass
+
+
+
 
 if __name__ == '__main__':
+    main()
     # tem_dic = np.load(this_root + 'PDSI\\tem_dic.npz')
     # for i in tem_dic:
     #     for d in tem_dic[i].item():
     #         print(d)
-    ci_pdsi_line_corr()
     # gen_dependent_pdsi1()
     # pdsi = np.load(this_root + 'PDSI\\PDSI_result_filter.npz')
     # for arr in pdsi:
