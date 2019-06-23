@@ -64,7 +64,7 @@ def process_bar(i,length,time_init=None,start_time=None,end_time=None,custom_pri
             "[%s%s]" % ('=' * done + '>'+'%0.2f' % (100 * float(i) / length) + '%', '<'+'-' * (50 - done)) + #进度条+百分比
             ' eta %s'%changeTime(eta)+#剩余时间
             '\t' +str(i) + '/' + str(length)+
-            '\t' +str(custom_print)
+            '\t' +str(custom_print)+'\t'
         )
         sys.stdout.flush()
     else:
