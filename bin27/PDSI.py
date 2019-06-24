@@ -1128,8 +1128,12 @@ def ci_pdsi():
 def ci_pre_temp_corr():
     ci1 = np.load(this_root + 'PDSI\\china_ci_dic1.npy').item()
     ci2 = np.load(this_root + 'PDSI\\china_ci_dic2.npy').item()
-    pre = np.load(this_root+'PDSI\\p_anomaly_trans.npy').item()
-    temp = np.load(this_root+'PDSI\\t_anomaly_trans.npy').item()
+    # pre = np.load(this_root+'PDSI\\p_anomaly_trans.npy').item()
+    # pre = np.load(r'C:\Users\ly\PycharmProjects\bnu_project04_py27\bin27\data\pre_monthly_composite_dic.npy').item()
+    pre = np.load(r'C:\Users\ly\PycharmProjects\bnu_project04_py27\bin27\data\pre_anomaly_dic.npy').item()
+    # temp = np.load(this_root+'PDSI\\t_anomaly_trans.npy').item()
+    # temp = np.load(r'C:\Users\ly\PycharmProjects\bnu_project04_py27\bin27\data\tmp_monthly_composite_dic.npy').item()
+    temp = np.load(r'C:\Users\ly\PycharmProjects\bnu_project04_py27\bin27\data\tmp_anomaly_dic.npy').item()
     all_ci = {}
     for key in ci1:
         vals = max([ci1[key], ci2[key]])
@@ -1138,18 +1142,22 @@ def ci_pre_temp_corr():
     x = []
     y = []
     z = []
-    sta_list = ['57872','57657','57776',
-                '57713','58813','57774',
-                '57671', '58334', '57789',
-                '52754', '57732', '57649',
-                '57761', '57762', '58665',
-                '57754', '54437', '57669',
-                '58818', '57720', '58821',
-                ]
+    # sta_list = ['57872','57657','57776',
+    #             '57713','58813','57774',
+    #             '57671', '58334', '57789',
+    #             '52754', '57732', '57649',
+    #             '57761', '57762', '58665',
+    #             '57754', '54437', '57669',
+    #             '58818', '57720', '58821',
+    #             ]
 
     for key in all_ci:
-        if not key[:5] in sta_list:
-            continue
+        sta = int(key.split('_')[0])
+        if sta > 51000:
+            pass
+        # exit()
+        # if not key[:5] in sta_list:
+        #     continue
         # exit()
         if key in pre and key in temp:
             pre_i = pre[key]
@@ -1163,14 +1171,30 @@ def ci_pre_temp_corr():
     print(len(x))
     print(len(y))
     print(len(y))
-    kde_plot_scatter.plot_scatter(x, z,title='temp,ci',s=18)
-    kde_plot_scatter.plot_scatter(y, z,title='pre,ci',s=18)
+    kde_plot_scatter.plot_scatter(x[::10], z[::10],title='temp,ci',s=1)
+
+    # kde_plot_scatter.plot_scatter(x, z,title='temp,ci',s=4)
+    kde_plot_scatter.plot_scatter(y[::10], z[::10],title='pre,ci',s=1)
+    # kde_plot_scatter.plot_scatter(y, z,title='pre,ci',s=4)
+    # kde_plot_scatter.plot_scatter(x, y,title='temp,pre',s=4)
+    kde_plot_scatter.plot_scatter(x[::10], y[::10],title='temp,pre',s=1)
+    plt.figure()
+    plt.scatter(x, z,s=0.1)
+    plt.title('tmp,ci')
+    plt.figure()
+    plt.scatter(y, z,s=0.1)
+    plt.title('pre,ci')
+    plt.figure()
+    plt.scatter(x, y,s=0.1)
+    plt.title('tmp,pre')
     # plt.figure()
     # plt.scatter(x, y, s=0.5)
     rxz = stats.pearsonr(x,z)
     ryz = stats.pearsonr(y,z)
+    rxy = stats.pearsonr(x,y)
     print('r_xz:%s'%rxz[0])
     print('r_yz:%s'%ryz[0])
+    print('r_xy:%s'%rxy[0])
     plt.show()
 
 
@@ -1327,6 +1351,60 @@ def gen_3_months_average():
     np.save(this_root+'PDSI\\pre_3_months_average',new_dic)
 
 
+
+def gen_3_months_average_new():
+    # 用新数据
+    this_root = os.getcwd()+'\\'
+    # pre = np.load(this_root + 'data\\pre_anomaly_dic.npy').item()
+    temp = np.load(this_root + 'data\\tmp_anomaly_dic.npy').item()
+    # pre = dict(pre)
+    temp = dict(temp)
+
+    date_list = []
+    for year in range(2000, 2016):
+        for mon in range(1, 13):
+            date_list.append(str(year) + '%02d' % mon)
+
+    new_dic = {}
+    time_init = time.time()
+    flag = 0
+    for key in temp:
+        time_start = time.time()
+        key_split = key.split('_')
+        sta = key_split[0]
+        date_str = key_split[1]
+        year = int(date_str[:4])
+        mon = int(date_str[-2:])
+
+        date = datetime.datetime(year, mon, 15)
+        time_delta = datetime.timedelta(30)
+
+        date_1 = date - time_delta
+        date_1_str = '%s%02d' % (date_1.year, date_1.month)
+
+        date_2 = date - time_delta * 2
+        date_2_str = '%s%02d' % (date_2.year, date_2.month)
+
+        # print(date_1_str)
+        # print(date_2_str)
+        try:
+            val1 = temp[sta + '_' + date_str]
+            val2 = temp[sta + '_' + date_1_str]
+            val3 = temp[sta + '_' + date_2_str]
+            val_mean = np.mean([val1, val2, val3])
+            # print(val_mean)
+
+            new_dic[key] = val_mean
+        except Exception as e:
+            # print(e)
+            pass
+        time_end = time.time()
+        log_process.process_bar(flag, len(temp), time_init, time_start, time_end)
+        flag += 1
+    print('saving dic...')
+    np.save(this_root + 'data\\temp_3_months_average_new', new_dic)
+
+
 def plot_line_3_months_average():
     t = np.load(this_root + 'PDSI\\temp_3_months_average.npy', encoding='latin1').item()
     p = np.load(this_root + 'PDSI\\pre_3_months_average.npy', encoding='latin1').item()
@@ -1374,23 +1452,147 @@ def plot_line_3_months_average():
         print(sta,t[sta])
 
 
-def main():
-    # import random
-    # # plot_line_3_months_average()
-    # a=np.linspace(-1,1,10000)
-    # b=a+1
-    # a = list(a)
-    # b = list(b)
-    # print(a)
-    # print(b)
-    # random.shuffle(a)
-    # print(a)
-    # print(b)
-    # kde_plot_scatter.plot_scatter(a,b)
-    # plt.show()
-    plot_line_3_months_average()
 
-    pass
+
+def plot_line_3_months_average_new():
+
+    ci = np.load(this_root + 'PDSI\\pdsi_trans.npy').item()
+
+    # t = np.load(r'C:\Users\ly\PycharmProjects\bnu_project04_py27\bin27\data\temp_3_months_average_new.npy', encoding='latin1').item()
+    p = np.load(r'C:\Users\ly\PycharmProjects\bnu_project04_py27\bin27\data\pre_3_months_average_new.npy', encoding='latin1').item()
+
+
+    ci = dict(ci)
+    # t = dict(t)
+    p = dict(p)
+
+    npz = np.load(this_root + '\\in_situ_data\\pre_dic.npz')
+
+    selected_sta = []
+    for sta in npz:
+        sta_int = int(sta)
+        # if 56000 < sta_int < 57000 :
+        #     selected_sta.append(sta)
+        selected_sta.append(sta)
+    # print(selected_sta)
+    print(len(selected_sta))
+
+    X = []
+    Y = []
+    for key in ci:
+        sta = key.split('_')[0]
+        if not sta in selected_sta:
+            continue
+        # print(key)
+        if key in p:
+            X.append(p[key])
+            Y.append(ci[key])
+
+    import random
+    # print(X)
+    # random.shuffle(X)
+    # print(X)
+    print(len(X))
+    r = stats.pearsonr(X,Y)
+    print('stats.pearsonr(X,Y)%s'%r[0])
+    kde_plot_scatter.plot_scatter(X[::20],Y[::20])
+    plt.figure()
+    plt.scatter(X,Y,s=1)
+    plt.show()
+
+
+
+
+
+    # for sta in t:
+    #     print(sta,t[sta])
+
+
+
+
+
+
+def gen_temp_anomaly_new_data():
+    this_root = os.getcwd()+'\\'
+    tmp_dic = dict(np.load(this_root+'data\\pre_monthly_composite_dic.npy').item())
+    sta_dic = np.load(this_root+'data\\sta_num_list.npy').item()
+    sta_dic = list(sta_dic)
+    sta_dic.sort()
+
+    date_list = []
+    for year in range(1951,2018):
+        for mon in range(1,13):
+            date = str(year)+'%02d'%mon
+            date_list.append(date)
+
+    # flag = 0
+    mean_std_dic = {}
+    for sta in sta_dic:
+        # flag+=1
+        # print(flag,'/',len(sta_dic))
+        for mon in range(1,13):
+            mon_str = '%02d'%mon
+            vals = []
+            for year in range(1951,2018):
+                year_str = str(year)
+                key = sta+'_'+year_str+mon_str
+                try:
+                    val = tmp_dic[key]
+                except Exception as e:
+                    val = None
+                    pass
+                if val != None:
+                    vals.append(val)
+                    # print(e)
+            if len(vals) > 10:
+                mean = np.mean(vals)
+                std = np.std(vals)
+                # print(sta+'_'+mon_str)
+                mean_std_dic[sta+'_'+mon_str] = [mean,std]
+            # else:
+            #     print(sta,mon_str)
+            #     # exit()
+
+    anomaly_dic = {}
+    flag = 0
+    time_init = time.time()
+    for key in tmp_dic:
+        # flag+=1
+        # print(flag,'/',len(tmp_dic))
+        time_start = time.time()
+        key_split = key.split('_')
+        sta = key_split[0]
+        mon = key_split[1][-2:]
+        val = tmp_dic[key]
+        try:
+            mean, std = mean_std_dic[sta+'_'+mon]
+            anomaly = (val-mean)/std
+            anomaly_dic[key] = anomaly
+        except Exception as e:
+            pass
+        time_end = time.time()
+        log_process.process_bar(flag,len(tmp_dic),time_init,time_start,time_end)
+        flag += 1
+    print('saving ...')
+    np.save(this_root+'data\\pre_anomaly_dic',anomaly_dic)
+
+
+
+
+
+
+
+def main():
+    plot_line_3_months_average_new()
+    # this_root = os.getcwd()+'\\'
+    # pre_anomaly = dict(np.load(this_root+'data\\pre_anomaly_dic.npy').item())
+    # tmp_anomaly = dict(np.load(this_root+'data\\tmp_anomaly_dic.npy').item())
+    #
+    # date_list = []
+    # for key in pre_anomaly:
+    #     sta = key.split('_')[0]
+    #     date = key.split('_')[1]
+
 
 
 
