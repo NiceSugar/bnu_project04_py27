@@ -204,7 +204,11 @@ def composite_pre_monthly():
 
 
 def main():
-    composite_pre_monthly()
+    predic = np.load(this_root+'data\\tmp_monthly_composite_dic.npy').item()
+    predic = dict(predic)
+    for key in predic:
+        print(key,predic[key])
+    # composite_pre_monthly()
     # npz = np.load(this_root+'data\\tmp_sta_val_dic_raw.npz')
     # for sta in npz:
     #     npy = npz[sta]
