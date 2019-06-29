@@ -1,6 +1,5 @@
 # coding=utf-8
 import os
-this_root = os.getcwd()+'\\..\\'
 import numpy as np
 # import time
 from matplotlib import pyplot as plt
@@ -16,6 +15,10 @@ from osgeo import gdalconst
 import datetime
 import osr, ogr
 import gdal
+import log_process
+import time
+
+this_root = 'e:\\MODIS\\'
 
 
 
@@ -74,7 +77,7 @@ def nc_to_npz(nc,npz_out):
         # print(date_str[:4])
 
         # continue
-        grid = ncin.variables['pre'][i][::-1]
+        grid = ncin.variables['tmp'][i][::-1]
         # print(type(grid))
         # exit()
         grid = np.array(grid)
@@ -479,7 +482,131 @@ def transform_data_npz(in_npz,lon_lat_dic,out_npz_name):
 
 
 
+
+def trans_nc_to_lon_lat_list():
+    nc = r'E:\MODIS\CRU_tmp\nc\cru_ts4.03.2001.2010.tmp.dat.nc'
+    ncin = Dataset(nc, 'r')
+    # print ncin.variables
+    lon = ncin['lon']
+    lat = ncin['lat']
+    lon_origin = lon[0]
+    lat_origin = lat[-1]
+    lon_size = lon[1]-lon[0]
+    lat_size = lat[1]-lat[0]
+    print(lon_origin)
+    print(lat_origin)
+    print(lon_size)
+    print(lat_size)
+    # exit()
+    npz = np.load(r'E:\MODIS\CRU_tmp\npz\2001.2018.npz')
+
+    time_init = time.time()
+    flag = 0
+    for date in npz:
+        # print(date)
+        time_start = time.time()
+        transform_dic = {}
+        arr = npz[date]
+        for i in range(len(arr)):
+            for j in range(len(arr[i])):
+                # print(i,j)
+                lon_i = lon_origin+lon_size*j
+                lat_i = lat_origin-lat_size*i
+                val = arr[i][j]
+                key = str(lon_i)+'_'+str(lat_i)
+                # print(key)
+                transform_dic[key] = val
+        np.save(this_root+r'CRU_tmp\transform\\'+date,transform_dic)
+        time_end = time.time()
+        log_process.process_bar(flag,len(npz),time_init,time_start,time_end)
+        flag += 1
+        # f.close()
+
+        # plt.imshow(arr)
+        # plt.colorbar()
+        # plt.title(date)
+        # plt.show()
+
+
+def extract_value_from_stations():
+    # 1、获取站点经纬度，设置50km范围lon_min,lon_max,lat_min,lat_max，存入字典
+    # 2、建立空字典
+    sta_pos_dic = np.load(this_root + 'ANN_input_para\\00_PDSI\\sta_pos_dic.npz')
+    sta_pos_dic_range = {}
+    sta_pos_dic_void = {}
+    for sta in sta_pos_dic:
+        # print(sta)
+        sta_pos_dic_void[sta] = []
+        lat = sta_pos_dic[sta][0]
+        lon = sta_pos_dic[sta][1]
+
+        lon_min = lon-0.5
+        lon_max = lon+0.5
+
+        lat_min = lat-0.5
+        lat_max = lat+0.5
+        sta_pos_dic_range[sta] = [[lon_min,lon_max],
+                                  [lat_min,lat_max]]
+
+
+    #3、读取每个月的CRU数据
+
+    fdir = r'E:\MODIS\CRU_tmp\transform\\'
+    flist = os.listdir(fdir)
+
+    CRU_vals_dic = {}
+    time_init = time.time()
+    flag = 0
+    for f in flist:
+        time_start = time.time()
+        arr = np.load(fdir + f).item()
+        dic = dict(arr)
+        # flag = 0
+        for key in dic:
+
+            key_split = key.split('_')
+            lon = float(key_split[0])
+            lat = float(key_split[1])
+
+            for sta in sta_pos_dic_range:
+                sta_pos_dic_range_dic = sta_pos_dic_range[sta]
+                lon_range = sta_pos_dic_range_dic[0]
+                lat_range = sta_pos_dic_range_dic[1]
+                lon_min = lon_range[0]
+                lon_max = lon_range[1]
+                lat_min = lat_range[0]
+                lat_max = lat_range[1]
+                if lon_min < lon < lon_max and lat_min < lat < lat_max:
+                    val = dic[key]
+                    sta_pos_dic_void[sta].append(val)
+        for sta in sta_pos_dic_void:
+            vals_list = sta_pos_dic_void[sta]
+            if len(vals_list) > 0:
+                key_name = sta+'_'+f[:-4]
+                val = np.mean(vals_list)
+                CRU_vals_dic[key_name] = val
+        time_end = time.time()
+        log_process.process_bar(flag,len(flist),time_init,time_start,time_end)
+        flag += 1
+
+
+
+
+    print('\nsaving dic...')
+    np.save(r'E:\MODIS\CRU_tmp\CRU_tmp_dic',CRU_vals_dic)
+
+
+
+# def
+
+
+
+
 def main():
+    # extract_value_from_stations()
+    # nc = this_root + 'CRU_tmp\\nc\\cru_ts4.03.2011.2018.tmp.dat.nc'
+    # nc_out = this_root+'CRU_tmp\\npz\\2011.2018'
+    # nc_to_npz(nc,nc_out)
     # shp = this_root+'shp\\china_dissolve.shp'
     # print(shp)
     # nc = this_root+'CRU_precip\\cru_ts4.02.1901.2017.pre.dat.nc'
@@ -507,7 +634,7 @@ def main():
     # in_npz = this_root+'CRU_precip\\pre.npz'
     # lon_lat_dic = np.load(out_dic+'.npy').item()
     # lon_lat_dic = dict(lon_lat_dic)
-    out_npz_name = this_root+'CRU_precip\\cru_transfomed'
+    # out_npz_name = this_root+'CRU_precip\\cru_transfomed'
     # transform_data_npz(in_npz,lon_lat_dic,out_npz_name)
     # gen_lon_lat_dic(rasterized_tif, mask_array, out_dic)
 
@@ -517,18 +644,24 @@ def main():
     #     print(arr[i])
     # plt.imshow(mask_array[::-1])
     # plt.show()
-    npz_name = this_root + 'CRU_precip\\cru_transfomed.npz'
-    npz = np.load(npz_name)
-    for i in npz:
-        print(len(npz[i]))
-        plt.plot(npz[i])
-        plt.title(i)
-        plt.show()
+    # npz_name = this_root + 'CRU_precip\\cru_transfomed.npz'
+    # npz = np.load(npz_name)
+    # for i in npz:
+    #     print(len(npz[i]))
+    #     plt.plot(npz[i])
+    #     plt.title(i)
+    #     plt.show()
 
 
     pass
 
 
 if __name__ == '__main__':
+    # npy = np.load(r'E:\MODIS\CRU_tmp\transform\200506.npy').item()
+    # dic = dict(npy)
+    # for key in dic:
+    #     print(key)
+    #     print(dic[key])
+    #     print('*'*8)
     main()
 
