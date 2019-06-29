@@ -1579,9 +1579,6 @@ def gen_temp_anomaly_new_data():
 
 
 
-
-
-
 def main():
     plot_line_3_months_average_new()
     # this_root = os.getcwd()+'\\'

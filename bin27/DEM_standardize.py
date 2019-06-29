@@ -163,7 +163,6 @@ def gen_lon_lat_dic():
 
 
 def main():
-    # gen_lon_lat_dic()
     dem_dic = np.load(this_root+'\\DEM\\DEM_data_transform.npy').item()
     dem_dic = dict(dem_dic)
     for k in dem_dic:
