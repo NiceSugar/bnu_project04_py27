@@ -156,5 +156,6 @@ def plot_scatter(val1,val2,cmap='Spectral',reverse=1,s=1.):
     # plt.ylim((0.11, 0.30))
     a, b, r = linefit(val1,val2)
     plot_fit_line(a,b,r,val1,val2)
-    print('showing...')
+    print('a:%s,b:%s,r:%s'%(a,b,r))
+    # print('showing...')
     # plt.show()
