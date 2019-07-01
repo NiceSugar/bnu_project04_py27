@@ -3,13 +3,6 @@ import os
 import numpy as np
 # import time
 from matplotlib import pyplot as plt
-# import clip
-# from multiprocessing import Process
-# import multiprocessing as mp
-# import psutil
-# import threading
-from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy import interpolate
 from netCDF4 import Dataset
 from osgeo import gdalconst
 import datetime
@@ -17,6 +10,7 @@ import osr, ogr
 import gdal
 import log_process
 import time
+import kde_plot_scatter
 
 this_root = 'e:\\MODIS\\'
 
@@ -77,7 +71,7 @@ def nc_to_npz(nc,npz_out):
         # print(date_str[:4])
 
         # continue
-        grid = ncin.variables['tmp'][i][::-1]
+        grid = ncin.variables['pre'][i][::-1]
         # print(type(grid))
         # exit()
         grid = np.array(grid)
@@ -484,7 +478,7 @@ def transform_data_npz(in_npz,lon_lat_dic,out_npz_name):
 
 
 def trans_nc_to_lon_lat_list():
-    nc = r'E:\MODIS\CRU_tmp\nc\cru_ts4.03.2001.2010.tmp.dat.nc'
+    nc = r'E:\MODIS\CRU_precip\cru_ts4.02.1901.2017.pre.dat.nc'
     ncin = Dataset(nc, 'r')
     # print ncin.variables
     lon = ncin['lon']
@@ -498,7 +492,7 @@ def trans_nc_to_lon_lat_list():
     print(lon_size)
     print(lat_size)
     # exit()
-    npz = np.load(r'E:\MODIS\CRU_tmp\npz\2001.2018.npz')
+    npz = np.load(r'E:\MODIS\CRU_precip\2001.2018.npz')
 
     time_init = time.time()
     flag = 0
@@ -516,7 +510,7 @@ def trans_nc_to_lon_lat_list():
                 key = str(lon_i)+'_'+str(lat_i)
                 # print(key)
                 transform_dic[key] = val
-        np.save(this_root+r'CRU_tmp\transform\\'+date,transform_dic)
+        np.save(this_root+r'CRU_precip\transform\\'+date,transform_dic)
         time_end = time.time()
         log_process.process_bar(flag,len(npz),time_init,time_start,time_end)
         flag += 1
@@ -551,7 +545,7 @@ def extract_value_from_stations():
 
     #3、读取每个月的CRU数据
 
-    fdir = r'E:\MODIS\CRU_tmp\transform\\'
+    fdir = r'E:\MODIS\CRU_precip\transform\\'
     flist = os.listdir(fdir)
 
     CRU_vals_dic = {}
@@ -593,11 +587,90 @@ def extract_value_from_stations():
 
 
     print('\nsaving dic...')
-    np.save(r'E:\MODIS\CRU_tmp\CRU_tmp_dic',CRU_vals_dic)
+    np.save(r'E:\MODIS\CRU_precip\CRU_precip_dic',CRU_vals_dic)
 
 
 
-# def
+def corr_with_insitu():
+    # load insitu
+    npy = np.load(r'E:\MODIS\in_situ_data\new_transform\pre_monthly_composite_dic.npy')
+    dic_insitu = dict(npy.item())
+
+    # load CRU
+    npy = np.load(r'E:\MODIS\CRU_precip\CRU_precip_dic.npy')
+    dic_cru = dict(npy.item())
+
+    # corr
+    insitu = []
+    cru = []
+    for key in dic_cru:
+        if key in dic_insitu:
+            val_cru = dic_cru[key]
+            val_insitu = dic_insitu[key]
+            if val_cru < 99999:
+                cru.append(val_cru)
+                insitu.append(val_insitu)
+    # import random
+    # random.shuffle(insitu)
+    kde_plot_scatter.plot_scatter(insitu,cru)
+    plt.show()
+
+
+    pass
+
+
+
+def gen_3_months_average():
+    # 用CRU数据
+    # this_root = os.getcwd()+'\\'
+    pre = np.load('E:\\MODIS\\CRU_precip\\CRU_precip_dic.npy').item()
+    # temp = np.load('E:\\MODIS\\CRU_tmp\\CRU_tmp_dic.npy').item()
+    pre = dict(pre)
+    # temp = dict(temp)
+
+    date_list = []
+    for year in range(2000, 2017):
+        for mon in range(1, 13):
+            date_list.append(str(year) + '%02d' % mon)
+
+    new_dic = {}
+    time_init = time.time()
+    flag = 0
+    for key in pre:
+        time_start = time.time()
+        key_split = key.split('_')
+        sta = key_split[0]
+        date_str = key_split[1]
+        year = int(date_str[:4])
+        mon = int(date_str[-2:])
+
+        date = datetime.datetime(year, mon, 15)
+        time_delta = datetime.timedelta(30)
+
+        date_1 = date - time_delta
+        date_1_str = '%s%02d' % (date_1.year, date_1.month)
+
+        date_2 = date - time_delta * 2
+        date_2_str = '%s%02d' % (date_2.year, date_2.month)
+
+        # print(date_1_str)
+        # print(date_2_str)
+        try:
+            val1 = pre[sta + '_' + date_str]
+            val2 = pre[sta + '_' + date_1_str]
+            val3 = pre[sta + '_' + date_2_str]
+            val_mean = np.mean([val1, val2, val3])
+            # print(val_mean)
+
+            new_dic[key] = val_mean
+        except Exception as e:
+            # print(e)
+            pass
+        time_end = time.time()
+        log_process.process_bar(flag, len(pre), time_init, time_start, time_end)
+        flag += 1
+    print('saving dic...')
+    np.save('E:\\MODIS\\CRU_precip\\pre_3_months_average_new', new_dic)
 
 
 
@@ -651,7 +724,12 @@ def main():
     #     plt.plot(npz[i])
     #     plt.title(i)
     #     plt.show()
-
+    # nc = r'E:\MODIS\CRU_precip\cru_ts4.02.1901.2017.pre.dat.nc'
+    # ncout = r'E:\MODIS\CRU_precip\2001.2008'
+    # nc_to_npz(nc,ncout)
+    # trans_nc_to_lon_lat_list()
+    # extract_value_from_stations()
+    gen_3_months_average()
 
     pass
 
