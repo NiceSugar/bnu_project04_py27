@@ -11,7 +11,8 @@ from matplotlib import pyplot as plt
 from osgeo import gdal
 from osgeo import ogr
 from osgeo import gdalconst
-# import
+import to_raster
+import log_process
 
 
 def readTif(fileName):
@@ -120,6 +121,17 @@ def normalize(array):
 
 
 
+def gen_normalize_dem_tif():
+    # for the purpose of examination
+    arr_dem = np.load(r'E:\MODIS\DEM\dem_normalize.npy')
+    plt.imshow(arr_dem)
+    plt.colorbar()
+    plt.show()
+    tif = r'E:\MODIS\DEM\china_1km_dem_wgs1984_resample.tif'
+    array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(tif)
+    to_raster.array2raster(r'E:\MODIS\DEM\china_1km_dem_wgs1984_resample_normalize.tif',originX, originY, pixelWidth, pixelHeight,arr_dem)
+
+
 def gen_lon_lat_dic():
     '''
     生成栅格和经纬度对应的字典
@@ -162,13 +174,83 @@ def gen_lon_lat_dic():
     np.save(this_root+'\\DEM\\DEM_data_transform',lon_lat_dic)
 
 
+
+def extract_value_from_stations():
+    # 1、获取站点经纬度，设置50km范围lon_min,lon_max,lat_min,lat_max，存入字典
+    # 2、建立空字典
+    this_root = 'e:\\MODIS\\'
+    sta_pos_dic = np.load(this_root + 'ANN_input_para\\00_PDSI\\sta_pos_dic.npz')
+    sta_pos_dic_range = {}
+    sta_pos_dic_void = {}
+    for sta in sta_pos_dic:
+        # print(sta)
+        sta_pos_dic_void[sta] = []
+        lat = sta_pos_dic[sta][0]
+        lon = sta_pos_dic[sta][1]
+
+        lon_min = lon-0.1
+        lon_max = lon+0.1
+
+        lat_min = lat-0.1
+        lat_max = lat+0.1
+        sta_pos_dic_range[sta] = [[lon_min,lon_max],
+                                  [lat_min,lat_max]]
+
+    date_list = []
+    for year in range(2003, 2017):
+        for month in range(1, 13):
+            date_list.append(str(year) + '%02d' % month)
+
+    DEM_vals_dic = {}
+    f = r'E:\MODIS\DEM\DEM_data_transform_normalized.npy'
+    arr = np.load(f).item()
+    dic = dict(arr)
+    flag = 0
+    time_init = time.time()
+    for key in dic:
+        time_start = time.time()
+        key_split = key.split('_')
+        lon = float(key_split[0])
+        lat = float(key_split[1])
+        for sta in sta_pos_dic_range:
+            sta_pos_dic_range_dic = sta_pos_dic_range[sta]
+            lon_range = sta_pos_dic_range_dic[0]
+            lat_range = sta_pos_dic_range_dic[1]
+            lon_min = lon_range[0]
+            lon_max = lon_range[1]
+            lat_min = lat_range[0]
+            lat_max = lat_range[1]
+            if lon_min < lon < lon_max and lat_min < lat < lat_max:
+                val = dic[key]
+                sta_pos_dic_void[sta].append(val)
+        time_end = time.time()
+        log_process.process_bar(flag,len(dic),time_init,time_start,time_end)
+        flag+=1
+
+    for sta in sta_pos_dic_void:
+        vals_list = sta_pos_dic_void[sta]
+        if len(vals_list) > 0:
+            for date in date_list:
+                key_name = sta+'_'+date
+                val = np.mean(vals_list)
+                DEM_vals_dic[key_name] = val
+                print(key_name,val)
+    print('\nsaving')
+    np.save(this_root+'DEM\\DEM_extract_from_sta',DEM_vals_dic)
+
+
+
+
+
 def main():
-    dem_dic = np.load(this_root+'\\DEM\\DEM_data_transform.npy').item()
-    dem_dic = dict(dem_dic)
-    for k in dem_dic:
-        print(k)
-        print(dem_dic[k])
-        print('*'*8)
+    # this_root = 'E:\\MODIS\\'
+    # dem_dic = np.load(this_root+'\\DEM\\DEM_data_transform_normalized.npy').item()
+    # dem_dic = dict(dem_dic)
+    # for k in dem_dic:
+    #     print(k)
+    #     print(dem_dic[k])
+    #     print('*'*8)
+    extract_value_from_stations()
 
 if __name__ == '__main__':
     main()
