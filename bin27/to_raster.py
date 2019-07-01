@@ -54,21 +54,4 @@ def array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeig
     outband.FlushCache()
     del outRaster
 
-if __name__ == '__main__':
-    arr = np.load(this_root+'/ERA/era_1_layer_mean.npy')[720-587:720-493,897:1079]
-    from matplotlib import pyplot as plt
-    # plt.imshow(arr)
-    # plt.show()
-    # exit()
-    new_arr = []
-    for i in arr:
-        temp = []
-        for j in i:
-            if not np.isnan(j) and j > 0:
-                temp.append(j)
-            else:
-                temp.append(-999999)
-        new_arr.append(temp)
-    new_arr = np.array(new_arr)
-    array2raster('era_1_layer_mean.tif',44.25,56.75,0.25,-0.25,new_arr)
 
