@@ -51,22 +51,32 @@ def process_bar(i,length,time_init=None,start_time=None,end_time=None,custom_pri
 
     i = i + 1
     if time_init:
-        time_delta = end_time - start_time
         # old version
+        # time_delta = end_time - start_time
         # eta = time_delta * length - time_delta*(i)
         time_elapse = end_time - time_init
         done = int(50 * (i) / length)
         # print('\n')
         eta = (1/(float(i) / length)-1)*time_elapse
-
-        sys.stdout.write(
-            '\r%s '%changeTime(time_elapse)+ #逝去时间
-            "[%s%s]" % ('=' * done + '>'+'%0.2f' % (100 * float(i) / length) + '%', '<'+'-' * (50 - done)) + #进度条+百分比
-            ' eta %s'%changeTime(eta)+#剩余时间
-            '\t' +str(i) + '/' + str(length)+
-            '\t' +str(custom_print)+'\t'
-        )
-        sys.stdout.flush()
+        if i < length:
+            sys.stdout.write(
+                '\r%s '%changeTime(time_elapse)+ #逝去时间
+                "[%s%s]" % ('=' * done + '>'+'%0.2f' % (100 * float(i) / length) + '%', '<'+'-' * (50 - done)) + #进度条+百分比
+                ' eta %s'%changeTime(eta)+#剩余时间
+                '\t' +str(i) + '/' + str(length)+
+                '\t' +str(custom_print)+'\t'
+            )
+            sys.stdout.flush()
+        else:
+            sys.stdout.write(
+                '\r%s ' % changeTime(time_elapse) +  # 逝去时间
+                "[%s%s]" % (
+                '=' * done + '>' + '%0.2f' % (100 * float(i) / length) + '%', '<' + '-' * (50 - done)) +  # 进度条+百分比
+                ' eta %s' % changeTime(eta) +  # 剩余时间
+                '\t' + str(i) + '/' + str(length) +
+                '\t' + str(custom_print) + '\n'
+            )
+            sys.stdout.flush()
     else:
         done = int(50 * (i) / length)
         sys.stdout.write(
@@ -98,11 +108,11 @@ def main():
     time_init = time.time()
     for i in range(1000):
         start = time.time()
-        time.sleep(0.01)
+        time.sleep(0.001)
         end = time.time()
         P(i, 1000,time_init,start,end)
         # start = time.time()
-
+    print('aaa')
 
     # a = changeTime(100.46546)
     # print(a)

@@ -132,6 +132,14 @@ def gen_normalize_dem_tif():
     to_raster.array2raster(r'E:\MODIS\DEM\china_1km_dem_wgs1984_resample_normalize.tif',originX, originY, pixelWidth, pixelHeight,arr_dem)
 
 
+def gen_dem_npy():
+    # for the purpose of generate non standardized dem dic
+    tif = r'E:\MODIS\DEM\china_1km_dem_wgs1984_resample.tif'
+    array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(tif)
+    np.save(r'E:\MODIS\DEM\china_1km_dem_wgs1984_resample_non_normalize',array)
+
+
+
 def gen_lon_lat_dic():
     '''
     生成栅格和经纬度对应的字典
@@ -175,6 +183,55 @@ def gen_lon_lat_dic():
 
 
 
+def gen_lon_lat_dic_non_normalize():
+    '''
+    生成栅格和经纬度对应的字典
+    数据格式:
+    dic[str(x.y)] = [lon,lat]
+    :return:
+    '''
+    # rasterized_tif = this_root + '/conf/my.tif'
+    this_root = r'e:\\MODIS\\'
+    DEM = this_root+'DEM\\china_1km_dem_wgs1984_resample.tif'
+    _, im_width, im_height, im_geotrans, im_proj = tif_to_array(DEM)
+    array = np.load(this_root+'DEM\\china_1km_dem_wgs1984_resample_non_normalize.npy')
+    # normalize(array)
+    # exit()
+    # clip_array = np.load(this_root+'\\conf\\china_T_F.npy')
+    # print(array)
+    # array = np.ma.masked_where(array<-9999,array)
+    # plt.imshow(array)
+    # plt.colorbar()
+    # plt.show()
+    print(im_geotrans)
+
+    lon_lat_dic = {}
+    time_init = time.time()
+    flag = 0
+    for y in range(len(array)):
+        time_start = time.time()
+        for x in range(len(array[y])):
+            if array[y][x] > -9000:
+                lon_start = im_geotrans[0]
+                lon_step = im_geotrans[1]
+                lon = lon_start + lon_step * x
+
+                lat_start = im_geotrans[3]
+                lat_step = im_geotrans[5]
+                lat = lat_start + lat_step * y
+                # print('*'*8)
+                # print(str(lon)+'_'+str(lat))
+                # print(array[y][x])
+                lon_lat_dic[str(lon)+'_'+str(lat)] = array[y][x]
+                # print(str(lon)+'_'+str(lat),array[y][x])
+        time_end = time.time()
+        log_process.process_bar(flag,len(array),time_init,time_start,time_end)
+        flag+=1
+    np.save(this_root+'\\DEM\\DEM_data_transform',lon_lat_dic)
+
+
+
+
 def extract_value_from_stations():
     # 1、获取站点经纬度，设置50km范围lon_min,lon_max,lat_min,lat_max，存入字典
     # 2、建立空字典
@@ -202,7 +259,7 @@ def extract_value_from_stations():
             date_list.append(str(year) + '%02d' % month)
 
     DEM_vals_dic = {}
-    f = r'E:\MODIS\DEM\DEM_data_transform_normalized.npy'
+    f = r'E:\MODIS\DEM\DEM_data_transform.npy'
     arr = np.load(f).item()
     dic = dict(arr)
     flag = 0
@@ -235,10 +292,8 @@ def extract_value_from_stations():
                 val = np.mean(vals_list)
                 DEM_vals_dic[key_name] = val
                 print(key_name,val)
-    print('\nsaving')
+    print('saving')
     np.save(this_root+'DEM\\DEM_extract_from_sta',DEM_vals_dic)
-
-
 
 
 
@@ -250,7 +305,11 @@ def main():
     #     print(k)
     #     print(dem_dic[k])
     #     print('*'*8)
-    extract_value_from_stations()
+    # extract_value_from_stations()
+    this_root = 'e:\\MODIS\\'
+    dem_dic = dict(np.load(this_root+'DEM\\DEM_extract_from_sta.npy').item())
+    for i in dem_dic:
+        print(i,dem_dic[i])
 
 if __name__ == '__main__':
-    main()
+    extract_value_from_stations()
