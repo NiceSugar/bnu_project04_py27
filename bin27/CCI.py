@@ -443,9 +443,61 @@ def concurrent_save_all_interp_dic():
     pool.join()
 
 
+def extract_cci_from_sta():
+    this_root = 'e:\\MODIS\\'
+    npz = np.load(this_root+'CCI\\time_interp.npz')
+    sta_pos_dic = np.load(this_root + 'ANN_input_para\\00_PDSI\\sta_pos_dic.npz')
+    date_list = []
+    for year in range(2003,2017):
+        for mon in range(1,13):
+            date_list.append(str(year)+'%02d'%mon)
+
+    CCI_sta_extract_dic = {}
+    import log_process
+    time_init = time.time()
+    flag = 0
+    for npy in npz:
+        time_start = time.time()
+        npy_split = npy.split('_')
+        lon = float(npy_split[0])
+        lat = float(npy_split[1])
+        vals = npz[npy]
+        if len(vals) < 10:
+            continue
+        for sta in sta_pos_dic:
+
+            pos = sta_pos_dic[sta]
+
+            lon_sta = pos[1]
+            lat_sta = pos[0]
+            lon_max = lon_sta+0.25
+            lon_min = lon_sta-0.25
+            lat_max = lat_sta+0.25
+            lat_min = lat_sta-0.25
+
+            if lon_min < lon < lon_max and lat_min < lat < lat_max:
+                for date in range(len(date_list)):
+                    key = sta+'_'+date_list[date]
+                    CCI_sta_extract_dic[key] = vals[date]
+        time_end = time.time()
+        log_process.process_bar(flag,len(npz),time_init,time_start,time_end)
+        flag += 1
+    print('saving...')
+    np.save(this_root+'CCI\\CCI_sta_extract_dic',CCI_sta_extract_dic)
+
+
+
+
+
+
+
+
+        # break
+
 
 
 def main():
+    extract_cci_from_sta()
     # do_clip()
     # fdir = 'D:\\project04\\CCI\\COMBINED\\'
     # outdir = 'D:\\project04\\CCI\\composed\\'
@@ -499,19 +551,19 @@ def main():
     #     plt.show()
     #     # break
     # dic = this_root+'CCI\\time_interp'
-    interp = this_root+'CCI\\time_interp.npz'
-    raw = this_root+'CCI\\data_transfom.npz'
-    dic_interp = np.load(interp)
-    dic_raw = np.load(raw)
-    for i in dic_interp:
-        arr_interp = dic_interp[i]
-        arr_raw = dic_raw[i]
-        plt.plot(arr_interp)
-        plt.title('interp')
-        plt.figure()
-        plt.title('raw')
-        plt.plot(arr_raw)
-        plt.show()
+    # interp = this_root+'CCI\\time_interp.npz'
+    # raw = this_root+'CCI\\data_transfom.npz'
+    # dic_interp = np.load(interp)
+    # dic_raw = np.load(raw)
+    # for i in dic_interp:
+    #     arr_interp = dic_interp[i]
+    #     arr_raw = dic_raw[i]
+    #     plt.plot(arr_interp)
+    #     plt.title('interp')
+    #     plt.figure()
+    #     plt.title('raw')
+    #     plt.plot(arr_raw)
+    #     plt.show()
     # npz_dir = this_root+'CCI\\'
     # save_dir = this_root+'CCI\\time_interp\\'
     # all_interp_dic = time_interp(npz_dir,save_dir)
