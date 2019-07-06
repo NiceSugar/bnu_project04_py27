@@ -623,9 +623,19 @@ def corr_with_insitu():
 def gen_3_months_average():
     # 用CRU数据
     # this_root = os.getcwd()+'\\'
-    pre = np.load('E:\\MODIS\\CRU_precip\\CRU_precip_dic.npy').item()
-    # temp = np.load('E:\\MODIS\\CRU_tmp\\CRU_tmp_dic.npy').item()
-    pre = dict(pre)
+
+    mode = 'pre'
+    if mode == 'tmp':
+        data = np.load('E:\\MODIS\\CRU_tmp\\CRU_tmp_dic_filter_inf.npy').item()
+        data = dict(data)
+        path = 'CRU_tmp\\tmp'
+    elif mode == 'pre':
+        data = np.load('E:\\MODIS\\CRU_precip\\CRU_precip_dic_filter_inf.npy').item()
+        data = dict(data)
+        path = 'CRU_precip\\pre'
+    else:
+        data = None
+        path = None
     # temp = dict(temp)
 
     date_list = []
@@ -636,7 +646,7 @@ def gen_3_months_average():
     new_dic = {}
     time_init = time.time()
     flag = 0
-    for key in pre:
+    for key in data:
         time_start = time.time()
         key_split = key.split('_')
         sta = key_split[0]
@@ -656,9 +666,10 @@ def gen_3_months_average():
         # print(date_1_str)
         # print(date_2_str)
         try:
-            val1 = pre[sta + '_' + date_str]
-            val2 = pre[sta + '_' + date_1_str]
-            val3 = pre[sta + '_' + date_2_str]
+            val1 = data[sta + '_' + date_str]
+            # print(val1)
+            val2 = data[sta + '_' + date_1_str]
+            val3 = data[sta + '_' + date_2_str]
             val_mean = np.mean([val1, val2, val3])
             # print(val_mean)
 
@@ -667,10 +678,116 @@ def gen_3_months_average():
             # print(e)
             pass
         time_end = time.time()
-        log_process.process_bar(flag, len(pre), time_init, time_start, time_end)
+        log_process.process_bar(flag, len(data), time_init, time_start, time_end)
         flag += 1
     print('saving dic...')
-    np.save('E:\\MODIS\\CRU_precip\\pre_3_months_average_new', new_dic)
+    np.save('E:\\MODIS\\'+ path +'_3_months_average_new', new_dic)
+
+
+
+
+def gen_6_months_average():
+    # 用CRU数据
+    # this_root = os.getcwd()+'\\'
+
+    mode = 'tmp'
+    if mode == 'tmp':
+        data = np.load('E:\\MODIS\\CRU_tmp\\CRU_tmp_dic_filter_inf.npy').item()
+        data = dict(data)
+        path = 'CRU_tmp\\tmp'
+    elif mode == 'pre':
+        data = np.load('E:\\MODIS\\CRU_precip\\CRU_precip_dic_filter_inf.npy').item()
+        data = dict(data)
+        path = 'CRU_precip\\pre'
+    else:
+        data = None
+        path = None
+    # temp = dict(temp)
+
+    date_list = []
+    for year in range(2000, 2017):
+        for mon in range(1, 13):
+            date_list.append(str(year) + '%02d' % mon)
+
+    new_dic = {}
+    time_init = time.time()
+    flag = 0
+    for key in data:
+        time_start = time.time()
+        key_split = key.split('_')
+        sta = key_split[0]
+        date_str = key_split[1]
+        year = int(date_str[:4])
+        mon = int(date_str[-2:])
+
+        date = datetime.datetime(year, mon, 15)
+        time_delta = datetime.timedelta(30)
+
+        date_1 = date - time_delta * 1
+        date_1_str = '%s%02d' % (date_1.year, date_1.month)
+
+        date_2 = date - time_delta * 2
+        date_2_str = '%s%02d' % (date_2.year, date_2.month)
+
+        date_3 = date - time_delta * 3
+        date_3_str = '%s%02d' % (date_2.year, date_3.month)
+
+        date_4 = date - time_delta * 4
+        date_4_str = '%s%02d' % (date_2.year, date_4.month)
+
+        date_5 = date - time_delta * 5
+        date_5_str = '%s%02d' % (date_2.year, date_5.month)
+
+        # print(date_1_str)
+        # print(date_2_str)
+        try:
+            val1 = data[sta + '_' + date_str]
+            val2 = data[sta + '_' + date_1_str]
+            val3 = data[sta + '_' + date_2_str]
+            val4 = data[sta + '_' + date_3_str]
+            val5 = data[sta + '_' + date_4_str]
+            val6 = data[sta + '_' + date_5_str]
+            val_mean = np.mean([val1, val2, val3, val4, val5, val6])
+            # print(val_mean)
+
+            new_dic[key] = val_mean
+        except Exception as e:
+            # print(e)
+            pass
+        time_end = time.time()
+        log_process.process_bar(flag, len(data), time_init, time_start, time_end)
+        flag += 1
+    print('saving dic...')
+    np.save('E:\\MODIS\\'+ path +'_6_months_average', new_dic)
+
+
+
+
+def filter_inf():
+    # CRU中存在无限值 去掉inf
+    # this_root = os.getcwd()+'\\'
+
+    mode = 'tmp'
+    if mode == 'tmp':
+        data = np.load('E:\\MODIS\\CRU_tmp\\CRU_tmp_dic.npy').item()
+        data = dict(data)
+        path = 'E:\\MODIS\\CRU_tmp\\CRU_tmp_dic_filter_inf.npy'
+    elif mode == 'pre':
+        data = np.load('E:\\MODIS\\CRU_precip\\CRU_precip_dic.npy').item()
+        data = dict(data)
+        path = 'E:\\MODIS\\CRU_precip\\CRU_precip_dic_filter_inf.npy'
+    else:
+        data = None
+        path = None
+
+    new_dic = {}
+    for key in data:
+        val = data[key]
+        if val < 9999:
+            new_dic[key] = val
+    np.save(path,new_dic)
+
+
 
 
 
@@ -729,7 +846,7 @@ def main():
     # nc_to_npz(nc,ncout)
     # trans_nc_to_lon_lat_list()
     # extract_value_from_stations()
-    gen_3_months_average()
+    gen_6_months_average()
 
     pass
 
@@ -742,4 +859,7 @@ if __name__ == '__main__':
     #     print(dic[key])
     #     print('*'*8)
     main()
-
+    # path = 'E:\\MODIS\\CRU_precip\\CRU_precip_dic_filter_inf.npy'
+    # npy = np.load(path).item()
+    # for i in npy:
+    #     print(i,npy[i])
