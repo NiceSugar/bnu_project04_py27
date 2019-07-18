@@ -16,9 +16,12 @@ from osgeo import gdalconst
 import datetime
 import osr, ogr
 import gdal
+import time
+import log_process
+from tqdm import tqdm
 
-
-this_root = os.getcwd()+'\\..\\'
+# this_root = os.getcwd()+'\\..\\'
+this_root = 'e:\\MODIS\\'
 
 def mk_dir(dir):
     if not os.path.isdir(dir):
@@ -548,6 +551,79 @@ def normalize():
     print(min)
     print(max)
 
+
+
+def extract_value_from_stations():
+    # 1、获取站点经纬度，设置50km范围lon_min,lon_max,lat_min,lat_max，存入字典
+    # 2、建立空字典
+    sta_pos_dic = np.load(this_root + 'ANN_input_para\\00_PDSI\\sta_pos_dic.npz')
+    sta_pos_dic_range = {}
+    sta_pos_dic_void = {}
+    for sta in sta_pos_dic:
+        # print(sta)
+        sta_pos_dic_void[sta] = []
+        lat = sta_pos_dic[sta][0]
+        lon = sta_pos_dic[sta][1]
+
+        lon_min = lon-0.5
+        lon_max = lon+0.5
+
+        lat_min = lat-0.5
+        lat_max = lat+0.5
+        sta_pos_dic_range[sta] = [[lon_min,lon_max],
+                                  [lat_min,lat_max]]
+
+
+    #3、读取每个月的GRACE数据
+
+    npz = np.load(this_root+'GRACE\\interp_data.npz')
+
+    date_list = []
+    for i in range(168):
+        date = datetime.datetime(2003+i/12,i%12+1,15)
+        mon = date.month
+        year = date.year
+        date_list.append('%s%02d'%(year,mon))
+
+    GRACE_vals_dic = {}
+    for key in tqdm(npz):
+        # key = npz[]
+        # print(key)
+        # exit()
+        key_split = key.split('_')
+        lon = float(key_split[0])
+        lat = float(key_split[1])
+
+        for sta in sta_pos_dic_range:
+            sta_pos_dic_range_dic = sta_pos_dic_range[sta]
+            lon_range = sta_pos_dic_range_dic[0]
+            lat_range = sta_pos_dic_range_dic[1]
+            lon_min = lon_range[0]
+            lon_max = lon_range[1]
+            lat_min = lat_range[0]
+            lat_max = lat_range[1]
+            if lon_min < lon < lon_max and lat_min < lat < lat_max:
+                vals = npz[key]
+                sta_pos_dic_void[sta].append(vals)
+
+
+    for sta in sta_pos_dic_void:
+        vals_list = sta_pos_dic_void[sta]
+        if len(vals_list) > 0:
+            vals_one_pix = vals_list[0]
+            for i in range(len(vals_one_pix)):
+                key = sta+'_'+date_list[i]
+                val = vals_one_pix[i]
+                GRACE_vals_dic[key] = val
+
+    print('\nsaving dic...')
+    np.save(this_root+'GRACE\\13_GRACE',GRACE_vals_dic)
+
+
+
+
+
+
 def main():
     # grace_lon_lat_dic = np.load(this_root+'conf\\lon_lat_dic_GRACE.npy').item()
     # grace_lon_lat_dic = dict(grace_lon_lat_dic)
@@ -559,7 +635,7 @@ def main():
     #     plt.plot(datatrans[i])
     #     plt.title(i)
     #     plt.show()
-    normalize()
+    extract_value_from_stations()
 
 
 
